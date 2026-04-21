@@ -1,9 +1,9 @@
-// --- CONFIG & DATA ---
+// data configuration
 const API_KEY = 'CmtF1XYNKmwb9Ztzxwd3DsX70qvZ2yEdla7WKV09vVVO5JahlFCfbT4L'; // Pexels API key
 const API_URL = 'https://api.pexels.com/videos/search?query=cinematic&per_page=12';
 let activeSource = "";
 
-// --- SELECTORS ---
+// create selectors
 const loginBtn = document.getElementById('login-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const loginContainer = document.getElementById('login-container');
