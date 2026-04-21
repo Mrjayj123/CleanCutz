@@ -1,8 +1,7 @@
 // --- CONFIG & DATA ---
-const MOCK_VIDEOS = [
-    { id: 1, title: "Nature B-Roll", url: "https://www.w3schools.com/html/mov_bbb.mp4" },
-    { id: 2, title: "Urban Drone", url: "https://www.w3schools.com/html/horse.ogv" } // Placeholder
-];
+const API_KEY = 'CmtF1XYNKmwb9Ztzxwd3DsX70qvZ2yEdla7WKV09vVVO5JahlFCfbT4L'; // Pexels API key
+const API_URL = 'https://api.pexels.com/videos/search?query=cinematic&per_page=12';
+let activeSource = "";
 
 // --- SELECTORS ---
 const loginBtn = document.getElementById('login-btn');
@@ -13,7 +12,7 @@ const videoList = document.getElementById('video-list');
 const mainVideo = document.getElementById('main-video');
 const cutBtn = document.getElementById('cut-btn');
 
-// --- AUTH LOGIC ---
+// Login credentials
 loginBtn.addEventListener('click', () => {
     const user = document.getElementById('username').value;
     if (user.trim() !== "") {
@@ -21,7 +20,7 @@ loginBtn.addEventListener('click', () => {
         appContainer.classList.remove('hidden');
         loadLibrary();
     } else {
-        document.getElementById('login-error').classList.remove('hidden');
+        document.getElementById('login-error').classList.remove('hidde');
     }
 });
 
@@ -30,16 +29,46 @@ logoutBtn.addEventListener('click', () => {
     loginContainer.classList.remove('hidden');
 });
 
-// --- API / DATA FETCHING ---
-function loadLibrary() {
-    videoList.innerHTML = "";
-    MOCK_VIDEOS.forEach(video => {
-        const div = document.createElement('div');
-        div.className = "video-thumb";
-        div.textContent = video.title;
-        div.onclick = () => selectVideo(video.url);
-        videoList.appendChild(div);
-    });
+
+// The function that fetches the data
+async function loadLibrary() {
+    videoList.innerHTML = "<p style='padding:20px; color:gray;'>Loading Studio Assets...</p>";
+    
+    try {
+        const response = await fetch(API_URL, {
+            headers: {
+                Authorization: API_KEY
+            }
+        });
+        const data = await response.json();
+        
+        // Clear loading text
+        videoList.innerHTML = "";
+
+        // Loop through the API results
+        data.videos.forEach(video => {
+            const div = document.createElement('div');
+            div.className = "video-card"; // Using your glass styling
+            
+            // We take the first high-res file provided by the API
+            const videoFile = video.video_files[0].link;
+
+            div.innerHTML = `
+                <strong>${video.user.name}'s Footage</strong>
+                <div style="font-size:0.7rem; color:#64748b">Duration: ${video.duration}s</div>
+            `;
+
+            div.onclick = () => {
+                activeSource = videoFile;
+                mainVideo.src = videoFile;
+                mainVideo.play();
+            };
+            videoList.appendChild(div);
+        });
+    } catch (error) {
+        videoList.innerHTML = "<p style='color:red;'>Failed to load library.</p>";
+        console.error("API Error:", error);
+    }
 }
 
 function selectVideo(url) {
