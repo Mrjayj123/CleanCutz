@@ -13,35 +13,36 @@ export default function LoginScreen({ onLogin }) {
     }
   }
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleLogin()
-    }
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') handleLogin()
   }
 
   return (
     <div className="overlay">
       <div className="glass auth-card">
         <h1 className="logo-text">Clean <span>Cutz</span></h1>
-        <p>A One of a kind Video Editing Experience</p>
-        
-        <input 
-          type="text" 
-          id="username" 
-          placeholder="Editor Name"
+        <p className="auth-subtitle">
+          Upload, trim, and save video clips with precision
+        </p>
+
+        <input
+          type="text"
+          id="username"
+          placeholder="Enter your name to begin"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
-          onKeyPress={handleKeyPress}
+          onKeyDown={handleKeyDown}
+          autoFocus
         />
-        
+
         <button className="btn-primary" onClick={handleLogin}>
-          Launch Studio
+          🎬 Launch Studio
         </button>
-        
+
         {error && (
-          <p className="error" style={{ color: '#ff4b4b', marginTop: '15px', fontSize: '0.8rem' }}>
-            Invalid credentials
-          </p>
+          <div className="status-msg error" style={{ marginTop: '16px' }}>
+            Please enter a name to continue
+          </div>
         )}
       </div>
     </div>

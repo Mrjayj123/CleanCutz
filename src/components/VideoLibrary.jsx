@@ -1,12 +1,15 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 
-const API_URL = 'http://localhost:3001/api/videos'
+const SERVER = 'http://localhost:3001'
 
-export default function VideoLibrary({ onSelectVideo }) {
+export default function VideoLibrary({ onSelectVideo, activeFilename }) {
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [uploading, setUploading] = useState(false)
+  const [importUrl, setImportUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     loadLibrary()
@@ -15,11 +18,11 @@ export default function VideoLibrary({ onSelectVideo }) {
   const loadLibrary = async () => {
     setLoading(true)
     setError(null)
-    
+
     try {
-      const response = await fetch(API_URL)
+      const response = await fetch(`${SERVER}/api/videos`)
       if (!response.ok) throw new Error('Failed to load videos')
-      
+
       const data = await response.json()
       setVideos(data)
     } catch (err) {
@@ -35,103 +38,175 @@ export default function VideoLibrary({ onSelectVideo }) {
     if (!file) return
 
     setUploading(true)
+    setError(null)
+
     try {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('http://localhost:3001/api/upload', {
+      const response = await fetch(`${SERVER}/api/upload`, {
         method: 'POST',
         body: formData
       })
 
       const contentType = response.headers.get('content-type') || ''
       const responseText = await response.text()
-      const data = contentType.includes('application/json') ? JSON.parse(responseText) : { error: responseText }
+      const data = contentType.includes('application/json')
+        ? JSON.parse(responseText)
+        : { error: responseText }
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Upload failed')
-      }
+      if (!response.ok) throw new Error(data.error || 'Upload failed')
 
+      // Select the newly uploaded video
+      onSelectVideo(data.url, data.filename)
       await loadLibrary()
-      event.target.value = '' // Reset file input
+      if (fileInputRef.current) fileInputRef.current.value = ''
     } catch (err) {
       console.error('Upload Error:', err)
-      alert(`Failed to upload video: ${err.message}`)
+      setError(`Upload failed: ${err.message}`)
     } finally {
       setUploading(false)
     }
   }
 
-  const handleDeleteVideo = async (filename) => {
+  const handleImportUrl = async () => {
+    if (!importUrl.trim()) return
+
+    setImporting(true)
+    setError(null)
+
+    try {
+      const response = await fetch(`${SERVER}/api/import-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: importUrl.trim() })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Import failed')
+
+      onSelectVideo(data.url, data.filename)
+      await loadLibrary()
+      setImportUrl('')
+    } catch (err) {
+      console.error('Import Error:', err)
+      setError(`Import failed: ${err.message}`)
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const handleImportKeyDown = (e) => {
+    if (e.key === 'Enter') handleImportUrl()
+  }
+
+  const handleDeleteVideo = async (e, filename) => {
+    e.stopPropagation()
     if (!confirm(`Delete "${filename}"?`)) return
 
     try {
-      const response = await fetch(`http://localhost:3001/api/videos/${filename}`, {
+      const response = await fetch(`${SERVER}/api/videos/${filename}`, {
         method: 'DELETE'
       })
-
       if (!response.ok) throw new Error('Delete failed')
-      
       await loadLibrary()
     } catch (err) {
       console.error('Delete Error:', err)
-      alert('Failed to delete video')
+      setError('Failed to delete video')
     }
+  }
+
+  const formatSize = (bytes) => {
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
   }
 
   return (
     <aside className="sidebar glass">
-      <div className="sidebar-label">LIBRARY</div>
-      
-      <label className="upload-btn">
-        📤 Upload Video
-        <input 
-          type="file" 
-          accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska"
-          onChange={handleFileUpload}
-          disabled={uploading}
-          style={{ display: 'none' }}
-        />
-      </label>
+      <div className="sidebar-header">
+        <div className="sidebar-label">Library</div>
+        <button className="btn-outline" onClick={loadLibrary} style={{ padding: '4px 10px', fontSize: '0.7rem' }}>
+          ↻ Refresh
+        </button>
+      </div>
 
-      <div id="video-list">
-        {loading && <p style={{ padding: '20px', color: 'gray' }}>Loading Studio Assets...</p>}
-        {uploading && <p style={{ padding: '20px', color: 'var(--accent-blue)' }}>Uploading...</p>}
-        {error && <p style={{ color: '#ff4b4b', padding: '20px', fontSize: '0.8rem' }}>{error}</p>}
-        {!loading && videos.length === 0 && !error && (
-          <p style={{ padding: '20px', color: 'gray', fontSize: '0.8rem' }}>No videos yet. Upload one to get started!</p>
+      {/* Upload Section */}
+      <div className="upload-section">
+        <label className="upload-btn">
+          {uploading ? (
+            <><span className="spinner"></span> Uploading...</>
+          ) : (
+            <>📤 Upload Video</>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska"
+            onChange={handleFileUpload}
+            disabled={uploading}
+            style={{ display: 'none' }}
+          />
+        </label>
+
+        <div className="divider">or paste a link</div>
+
+        <div className="url-import">
+          <input
+            type="url"
+            placeholder="https://example.com/video.mp4"
+            value={importUrl}
+            onChange={(e) => setImportUrl(e.target.value)}
+            onKeyDown={handleImportKeyDown}
+            disabled={importing}
+          />
+          <button
+            className="url-import-btn"
+            onClick={handleImportUrl}
+            disabled={importing || !importUrl.trim()}
+          >
+            {importing ? '...' : '⬇'}
+          </button>
+        </div>
+      </div>
+
+      {/* Video List */}
+      <div className="video-list">
+        {loading && (
+          <div className="loading">Loading assets...</div>
         )}
-        {!loading && videos.length > 0 && (
-          videos.map((video) => (
-            <div 
-              key={video.id}
-              className="video-card"
-              style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', gap: '8px' }}
-            >
-              <div onClick={() => onSelectVideo(video.url)}>
-                <strong>{video.name}</strong>
-                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                  Size: {(video.size / 1024 / 1024).toFixed(2)}MB
-                </div>
-              </div>
-              <button 
-                onClick={() => handleDeleteVideo(video.id)}
-                style={{
-                  fontSize: '0.7rem',
-                  padding: '4px 8px',
-                  background: 'rgba(255, 75, 75, 0.2)',
-                  border: '1px solid rgba(255, 75, 75, 0.5)',
-                  color: '#ff4b4b',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
+
+        {error && (
+          <div className="status-msg error" style={{ margin: 0 }}>{error}</div>
+        )}
+
+        {!loading && videos.length === 0 && !error && (
+          <div className="empty-state">
+            No videos yet. Upload a file or paste a URL to get started!
+          </div>
+        )}
+
+        {!loading && videos.map((video) => (
+          <div
+            key={video.id}
+            className={`video-card${activeFilename === video.name ? ' active' : ''}`}
+            onClick={() => onSelectVideo(video.url, video.name)}
+          >
+            <div className="video-card-name" title={video.name}>
+              🎞️ {video.name}
+            </div>
+            <div className="video-card-meta">
+              {formatSize(video.size)}
+            </div>
+            <div className="video-card-actions">
+              <button
+                className="btn-danger"
+                onClick={(e) => handleDeleteVideo(e, video.id)}
               >
                 Delete
               </button>
             </div>
-          ))
-        )}
+          </div>
+        ))}
       </div>
     </aside>
   )
