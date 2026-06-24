@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react'
-
-const SERVER = 'http://localhost:3001'
+import { apiJson } from '../lib/api'
 
 export default function VideoLibrary({ onSelectVideo, activeFilename }) {
   const [videos, setVideos] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [uploading, setUploading] = useState(false)
@@ -20,11 +20,9 @@ export default function VideoLibrary({ onSelectVideo, activeFilename }) {
     setError(null)
 
     try {
-      const response = await fetch(`${SERVER}/api/videos`)
-      if (!response.ok) throw new Error('Failed to load videos')
-
-      const data = await response.json()
+      const data = await apiJson('/api/videos')
       setVideos(data)
+
     } catch (err) {
       console.error('API Error:', err)
       setError('Failed to load library. Make sure the server is running on port 3001.')
@@ -44,10 +42,15 @@ export default function VideoLibrary({ onSelectVideo, activeFilename }) {
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch(`${SERVER}/api/upload`, {
+      // apiJson doesn't support multipart bodies; use fetch but attach Authorization
+      const token = sessionStorage.getItem('cleancutz_token') || ''
+
+      const response = await fetch(`http://localhost:3001/api/upload`, {
         method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData
       })
+
 
       const contentType = response.headers.get('content-type') || ''
       const responseText = await response.text()
@@ -56,6 +59,7 @@ export default function VideoLibrary({ onSelectVideo, activeFilename }) {
         : { error: responseText }
 
       if (!response.ok) throw new Error(data.error || 'Upload failed')
+
 
       // Select the newly uploaded video
       onSelectVideo(data.url, data.filename)
@@ -76,14 +80,11 @@ export default function VideoLibrary({ onSelectVideo, activeFilename }) {
     setError(null)
 
     try {
-      const response = await fetch(`${SERVER}/api/import-url`, {
+      const data = await apiJson('/api/import-url', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: importUrl.trim() })
+        body: { url: importUrl.trim() }
       })
 
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error || 'Import failed')
 
       onSelectVideo(data.url, data.filename)
       await loadLibrary()
@@ -105,10 +106,14 @@ export default function VideoLibrary({ onSelectVideo, activeFilename }) {
     if (!confirm(`Delete "${filename}"?`)) return
 
     try {
-      const response = await fetch(`${SERVER}/api/videos/${filename}`, {
-        method: 'DELETE'
+      const token = sessionStorage.getItem('cleancutz_token') || ''
+
+      const response = await fetch(`http://localhost:3001/api/videos/${filename}`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
       })
       if (!response.ok) throw new Error('Delete failed')
+
       await loadLibrary()
     } catch (err) {
       console.error('Delete Error:', err)

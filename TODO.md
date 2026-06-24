@@ -1,7 +1,9 @@
-- [ ] Add backend endpoint POST /api/trim using FFmpeg to generate a saved trimmed file (note: ffmpeg not currently installed on system) 
-
-- [ ] Update VideoEditor to call /api/trim and preview the returned trimmed URL
-- [ ] Refresh VideoLibrary after trimming (likely via a callback)
-- [ ] Ensure output folder exists (public/videos/trimmed)
-- [ ] Test: upload video -> trim -> confirm trimmed file is saved and playable
+- [ ] Create backend modules auth.js/db.js (done)
+- [ ] Add authentication page (email + username) to React UI and wire it to backend token/session
+- [ ] Revert UI behavior to use the latest working backend-secured flow
+- [ ] Ensure VideoLibrary sends Authorization headers for all API calls (/api/videos, /api/upload, /api/import-url, /api/videos/:filename)
+- [ ] Ensure app can fetch and play locally stored videos and imported YouTube/social/direct links
+- [ ] Verify trim flow: call /api/trim, preview returned trimmed URL, refresh library
+- [ ] Keep CSS intact (no modifications to existing CSS files unless adding minimal styles for new auth UI)
+- [ ] Test end-to-end: register/login -> import URL -> trim -> download
 

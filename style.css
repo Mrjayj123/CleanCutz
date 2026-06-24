@@ -8,6 +8,15 @@
     --bg-dark: #000000;
 }
 
+/* Light theme overrides, applied via data-theme="light" on <body> */
+body[data-theme="light"] {
+    --glass-bg: rgba(0, 0, 0, 0.03);
+    --glass-border: rgba(0, 0, 0, 0.08);
+    --text-main: #0f172a;
+    --text-dim: #64748b;
+    --bg-dark: #f4f5f7;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -21,6 +30,7 @@ body {
     height: 100vh;
     width: 100vw;
     overflow: hidden; /* Prevents scrollbars during editing */
+    transition: background-color 0.2s, color 0.2s;
 }
 
 /*the background layer*/
@@ -32,7 +42,8 @@ body {
     width: 100%;
     height: 100%;
     z-index: -1; /* Pushes background behind everything */
-   
+    background: radial-gradient(circle at 20% 20%, var(--accent-blue), transparent 50%),
+                radial-gradient(circle at 80% 70%, #8b5cf6, transparent 55%);
     filter: blur(60px);
     opacity: 0.8;
 }
@@ -78,7 +89,7 @@ body {
 }
 
 /* --- Form Elements --- */
-input[type="text"], input[type="number"] {
+input[type="text"], input[type="number"], input[type="password"], input[type="email"] {
     width: 100%;
     background: rgba(0, 0, 0, 0.4);
     border: 1px solid var(--glass-border);
@@ -89,6 +100,14 @@ input[type="text"], input[type="number"] {
     margin-bottom: 16px;
     outline: none;
     transition: border-color 0.2s;
+}
+
+body[data-theme="light"] input[type="text"],
+body[data-theme="light"] input[type="number"],
+body[data-theme="light"] input[type="password"],
+body[data-theme="light"] input[type="email"] {
+    background: rgba(255, 255, 255, 0.6);
+    color: #0f172a;
 }
 
 input:focus { border-color: var(--accent-blue); }
@@ -107,6 +126,47 @@ input:focus { border-color: var(--accent-blue); }
 
 .btn-primary:hover { opacity: 0.9; }
 .btn-primary:active { transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --- Auth tabs (login / sign up) --- */
+.auth-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 4px;
+    margin-bottom: 20px;
+}
+
+body[data-theme="light"] .auth-tabs {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.auth-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 10px;
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.auth-tab-active {
+    background: var(--accent-blue);
+    color: rgb(214, 41, 41);
+}
+
+.auth-error {
+    color: #f87171;
+    font-size: 0.85rem;
+    margin: -6px 0 16px;
+    text-align: left;
+}
 
 /* --- Main App Layout --- */
 .app-layout {
@@ -124,6 +184,51 @@ input:focus { border-color: var(--accent-blue); }
 
 .logo { font-weight: 800; letter-spacing: -1px; }
 .logo span { color: var(--text-dim); font-weight: 400; }
+
+.navbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.navbar-greeting {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+}
+
+.theme-toggle {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    color: var(--text-main);
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.15s, opacity 0.15s;
+}
+
+.theme-toggle:hover { opacity: 0.8; }
+.theme-toggle:active { transform: scale(0.92); }
+
+.navbar-logout {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.navbar-logout:hover {
+    color: var(--text-main);
+    border-color: var(--text-dim);
+}
 
 .studio-content {
     display: flex;
@@ -147,4 +252,114 @@ input:focus { border-color: var(--accent-blue); }
     50% { opacity: 0.4; }
     100% { opacity: 1; }
 }
-    
+
+/* --- Video history panel --- */
+.history-panel {
+    flex: 1;
+    padding: 28px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+}
+
+.history-header h2 {
+    font-size: 1.2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+.history-header .auth-tabs {
+    margin-bottom: 0;
+    width: auto;
+}
+
+.history-empty {
+    color: var(--text-dim);
+    font-size: 0.9rem;
+    padding: 40px 0;
+    text-align: center;
+}
+
+.history-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--glass-border);
+    border-radius: 14px;
+    padding: 10px 14px;
+}
+
+.history-thumb {
+    width: 64px;
+    height: 40px;
+    border-radius: 8px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.5);
+    flex-shrink: 0;
+}
+
+.history-meta {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.history-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.history-sub {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+}
+
+.history-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.history-action {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s, border-color 0.15s;
+}
+
+.history-action:hover {
+    color: var(--text-main);
+    border-color: var(--text-dim);
+}
+
+.history-action-danger:hover {
+    color: #f87171;
+    border-color: #f87171;
+}

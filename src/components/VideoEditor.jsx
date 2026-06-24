@@ -139,15 +139,21 @@ export default function VideoEditor({ videoSource, activeFilename, onTrimmed, on
     setTrimResult(null)
 
     try {
+      const token = sessionStorage.getItem('cleancutz_token') || ''
+
       const response = await fetch(`${SERVER}/api/trim`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
         body: JSON.stringify({
           filename: activeFilename,
           start: Math.round(startTime * 100) / 100,
           end: Math.round(endTime * 100) / 100
         })
       })
+
 
       const data = await response.json()
       if (!response.ok) throw new Error(data?.error || 'Trim failed')
@@ -292,13 +298,15 @@ export default function VideoEditor({ videoSource, activeFilename, onTrimmed, on
           {trimResult && (
             <a
               className="download-btn"
-              href={`${SERVER}/api/download/trimmed/${trimResult.filename}`}
+              href={`${SERVER}/api/download/trimmed/${trimResult.filename}?token=${encodeURIComponent(sessionStorage.getItem('cleancutz_token') || '')}`}
+
               download={trimResult.filename}
               title="Download trimmed clip"
             >
               ⬇ Download
             </a>
           )}
+
 
           <button
             className="trim-btn"
